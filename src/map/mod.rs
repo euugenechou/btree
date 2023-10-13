@@ -1,7 +1,9 @@
+mod iter;
 mod node;
 #[cfg(test)]
 mod tests;
 
+use iter::{Iter, Keys, Values};
 use node::Node;
 use std::{
     fmt::{self, Debug, Formatter},
@@ -112,6 +114,18 @@ impl<K, V> BTreeMap<K, V> {
     pub fn clear(&mut self) {
         self.len = 0;
         self.root = Node::new();
+    }
+
+    pub fn iter(&self) -> Iter<'_, K, V> {
+        Iter::new(&self.root)
+    }
+
+    pub fn keys(&self) -> Keys<'_, K, V> {
+        Keys::new(self.iter())
+    }
+
+    pub fn values(&self) -> Values<'_, K, V> {
+        Values::new(self.iter())
     }
 }
 

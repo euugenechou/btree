@@ -2,31 +2,49 @@ pub mod error;
 pub mod handle;
 pub mod node;
 
+use error::Error;
+use handle::{NodeReadHandle, NodeWriteHandle};
 use node::Node;
-use std::fmt::{self, Debug, Formatter};
+use serde::{Deserialize, Serialize};
+use std::{
+    fmt::{self, Debug, Formatter},
+    marker::PhantomData,
+};
+use storage::Storage;
 
 const DEFAULT_DEGREE: usize = 2;
 
-pub struct BTree<K, V> {
+pub struct BTree<K, V, S> {
     len: usize,
     degree: usize,
-    root: Node<K, V>,
+    root: u64,
+    storage: S,
+    pd: PhantomData<(K, V)>,
 }
 
-impl<K, V> BTree<K, V>
-where
-    K: Ord,
-{
-    pub fn new() -> Self {
-        Self::with_degree(DEFAULT_DEGREE)
+impl<K, V, S> BTree<K, V, S> {
+    pub fn new(storage: S) -> Result<Self, Error>
+    where
+        K: Serialize,
+        V: Serialize,
+        S: Storage<Id = u64>,
+    {
+        Self::with_degree(storage, DEFAULT_DEGREE)
     }
 
-    pub fn with_degree(degree: usize) -> Self {
-        Self {
+    pub fn with_degree(mut storage: S, degree: usize) -> Result<Self, Error>
+    where
+        K: Serialize,
+        V: Serialize,
+        S: Storage<Id = u64>,
+    {
+        Ok(Self {
             len: 0,
             degree,
-            root: Node::new(),
-        }
+            root: NodeWriteHandle::create(Node::<K, V>::new(), &mut storage)?,
+            storage,
+            pd: PhantomData,
+        })
     }
 
     pub fn len(&self) -> usize {
@@ -37,12 +55,22 @@ where
         self.len() == 0
     }
 
-    pub fn contains(&self, k: &K) -> bool {
-        self.get(k).is_some()
+    pub fn contains(&self, k: &K) -> Result<bool, Error>
+    where
+        for<'de> K: Ord + Deserialize<'de>,
+        for<'de> V: Deserialize<'de>,
+    {
+        self.get(k).map(|res| res.is_some())
     }
 
-    pub fn get(&self, k: &K) -> Option<&V> {
-        self.root.get(k).map(|(idx, node)| &node.vals[idx])
+    pub fn get(&self, k: &K) -> Result<Option<&V>, Error>
+    where
+        for<'de> K: Ord + Deserialize<'de>,
+        for<'de> V: Deserialize<'de>,
+    {
+        NodeReadHandle::open(self.root, self.storage)?
+            .get(k)
+            .map(|(idx, node)| &node.vals[idx])
     }
 
     pub fn get_mut(&mut self, k: &K) -> Option<&mut V> {
@@ -94,7 +122,7 @@ where
     }
 }
 
-impl<K: Debug, V> Debug for BTree<K, V>
+impl<K, V, S> Debug for BTree<K, V, S>
 where
     K: Debug,
     V: Debug,

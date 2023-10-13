@@ -1,6 +1,27 @@
 use super::{BTreeMap, Node};
 
 #[test]
+fn iter() {
+    let mut m = BTreeMap::new();
+
+    for i in 0..10 {
+        m.insert(i, i + 1);
+    }
+
+    for (i, kv) in m.iter().enumerate() {
+        assert_eq!((&i, &(i + 1)), kv);
+    }
+
+    for (i, k) in m.keys().enumerate() {
+        assert_eq!(&i, k);
+    }
+
+    for (i, k) in m.values().enumerate() {
+        assert_eq!(&(i + 1), k);
+    }
+}
+
+#[test]
 fn shuffled() {
     let mut m = BTreeMap::new();
     let shuffled = "iqgkzyrjexbalpcwtsvfmuhdon";

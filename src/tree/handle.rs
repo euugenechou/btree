@@ -4,13 +4,25 @@ use serde::{Deserialize, Serialize};
 use std::ops::{Deref, DerefMut};
 use storage::Storage;
 
-pub struct NodeHandle<'a, K, V, S> {
+pub struct NodeReadHandle<'a, K, V, S> {
     pub(crate) id: u64,
     pub(crate) node: Node<K, V>,
-    _storage: &'a S,
+    storage: &'a S,
 }
 
-impl<'a, K, V, S> NodeHandle<'a, K, V, S> {
+impl<'a, K, V, S> Deref for NodeReadHandle<'a, K, V, S> {
+    type Target = Node<K, V>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.node
+    }
+}
+
+impl<'a, K, V, S> NodeReadHandle<'a, K, V, S> {
+    pub fn new(id: u64, node: Node<K, V>, storage: &S) -> Self {
+        Self { id, node, storage }
+    }
+
     pub fn open(id: u64, storage: &'a mut S) -> Result<Self, Error>
     where
         for<'de> K: Deserialize<'de>,
@@ -28,12 +40,12 @@ impl<'a, K, V, S> NodeHandle<'a, K, V, S> {
         Ok(Self {
             id,
             node: bincode::deserialize(&ser)?,
-            _storage: storage,
+            storage,
         })
     }
 }
 
-pub struct NodeMutHandle<'a, K, V, S>
+pub struct NodeWriteHandle<'a, K, V, S>
 where
     K: Serialize,
     V: Serialize,
@@ -44,12 +56,18 @@ where
     storage: &'a mut S,
 }
 
-impl<'a, K, V, S> NodeMutHandle<'a, K, V, S>
+impl<'a, K, V, S> NodeWriteHandle<'a, K, V, S>
 where
     K: Serialize,
     V: Serialize,
     S: Storage<Id = u64>,
 {
+    pub fn create(node: Node<K, V>, storage: &'a mut S) -> Result<u64, Error> {
+        let id = storage.alloc_id().map_err(|_| Error::Storage)?;
+        let handle = Self { id, node, storage };
+        Ok(id)
+    }
+
     pub fn open(id: u64, storage: &'a mut S) -> Result<Self, Error>
     where
         for<'de> K: Deserialize<'de>,
@@ -89,7 +107,7 @@ where
     }
 }
 
-impl<'a, K, V, S> Deref for NodeMutHandle<'a, K, V, S>
+impl<'a, K, V, S> Deref for NodeWriteHandle<'a, K, V, S>
 where
     K: Serialize,
     V: Serialize,
@@ -102,7 +120,7 @@ where
     }
 }
 
-impl<'a, K, V, S> DerefMut for NodeMutHandle<'a, K, V, S>
+impl<'a, K, V, S> DerefMut for NodeWriteHandle<'a, K, V, S>
 where
     K: Serialize,
     V: Serialize,
@@ -113,7 +131,7 @@ where
     }
 }
 
-impl<'a, K, V, S> Drop for NodeMutHandle<'a, K, V, S>
+impl<'a, K, V, S> Drop for NodeWriteHandle<'a, K, V, S>
 where
     K: Serialize,
     V: Serialize,
