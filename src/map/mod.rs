@@ -13,11 +13,7 @@ pub struct BTreeMap<K, V> {
     root: Node<K, V>,
 }
 
-impl<K, V> BTreeMap<K, V>
-where
-    K: Ord + Clone,
-    V: Clone,
-{
+impl<K, V> BTreeMap<K, V> {
     pub fn new() -> Self {
         Self::with_degree(DEFAULT_DEGREE)
     }
@@ -38,25 +34,40 @@ where
         self.len() == 0
     }
 
-    pub fn contains(&self, k: &K) -> bool {
+    pub fn contains(&self, k: &K) -> bool
+    where
+        K: Ord,
+    {
         self.get(k).is_some()
     }
 
-    pub fn get(&self, k: &K) -> Option<&V> {
+    pub fn get(&self, k: &K) -> Option<&V>
+    where
+        K: Ord,
+    {
         self.root.get(k).map(|(idx, node)| &node.vals[idx])
     }
 
-    pub fn get_mut(&mut self, k: &K) -> Option<&mut V> {
+    pub fn get_mut(&mut self, k: &K) -> Option<&mut V>
+    where
+        K: Ord,
+    {
         self.root.get_mut(k).map(|(idx, node)| &mut node.vals[idx])
     }
 
-    pub fn get_key_value(&self, k: &K) -> Option<(&K, &V)> {
+    pub fn get_key_value(&self, k: &K) -> Option<(&K, &V)>
+    where
+        K: Ord,
+    {
         self.root
             .get(k)
             .map(|(idx, node)| (&node.keys[idx], &node.vals[idx]))
     }
 
-    pub fn insert(&mut self, k: K, v: V) -> Option<V> {
+    pub fn insert(&mut self, k: K, v: V) -> Option<V>
+    where
+        K: Ord,
+    {
         if self.root.is_full(self.degree) {
             let mut new_root = Node::new();
             std::mem::swap(&mut self.root, &mut new_root);
@@ -73,11 +84,19 @@ where
         res
     }
 
-    pub fn remove(&mut self, k: &K) -> Option<V> {
+    pub fn remove(&mut self, k: &K) -> Option<V>
+    where
+        K: Ord + Clone,
+        V: Clone,
+    {
         self.remove_entry(k).map(|(_, val)| val)
     }
 
-    pub fn remove_entry(&mut self, k: &K) -> Option<(K, V)> {
+    pub fn remove_entry(&mut self, k: &K) -> Option<(K, V)>
+    where
+        K: Ord + Clone,
+        V: Clone,
+    {
         if let Some(entry) = self.root.remove(k, self.degree) {
             if !self.root.is_leaf() && self.root.is_empty() {
                 self.root = self.root.children.pop().unwrap();
@@ -95,10 +114,10 @@ where
     }
 }
 
-impl<K: Debug, V> Debug for BTreeMap<K, V>
+impl<K, V> Debug for BTreeMap<K, V>
 where
-    K: Ord + Clone + Debug,
-    V: Clone + Debug,
+    K: Debug,
+    V: Debug,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", self.root)

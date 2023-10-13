@@ -1,20 +1,21 @@
+use crate::tree::error::Error;
+use embedded_io::blocking::{Read, Write};
+use serde::{Deserialize, Serialize};
 use std::{
     cmp::Ordering,
     fmt::{self, Debug, Formatter},
     mem,
 };
+use storage::Storage;
 
+#[derive(Serialize, Deserialize)]
 pub(crate) struct Node<K, V> {
     pub(crate) keys: Vec<K>,
     pub(crate) vals: Vec<V>,
     pub(crate) children: Vec<Node<K, V>>,
 }
 
-impl<K, V> Node<K, V>
-where
-    K: Ord + Clone,
-    V: Clone,
-{
+impl<K, V> Node<K, V> {
     pub fn new() -> Self {
         Self {
             keys: Vec::new(),
@@ -39,7 +40,44 @@ where
         self.children.is_empty()
     }
 
-    fn find_index(&self, k: &K) -> usize {
+    fn read_from_storage<S>(storage: &mut S, id: u64) -> Result<Self, Error>
+    where
+        for<'de> K: Deserialize<'de>,
+        for<'de> V: Deserialize<'de>,
+        S: Storage<Id = u64>,
+    {
+        let mut ser = vec![];
+
+        storage
+            .read_handle(&id)
+            .map_err(|_| Error::Storage)?
+            .read_to_end(&mut ser)
+            .map_err(|_| Error::Storage)?;
+
+        Ok(bincode::deserialize(&ser)?)
+    }
+
+    fn write_to_storage<S>(&self, storage: &mut S, id: u64) -> Result<(), Error>
+    where
+        K: Serialize,
+        V: Serialize,
+        S: Storage<Id = u64>,
+    {
+        let ser = bincode::serialize(self)?;
+
+        storage
+            .write_handle(&id)
+            .map_err(|_| Error::Storage)?
+            .write_all(&ser)
+            .map_err(|_| Error::Storage)?;
+
+        Ok(())
+    }
+
+    fn find_index(&self, k: &K) -> usize
+    where
+        K: Ord,
+    {
         let mut size = self.len();
         let mut left = 0;
         let mut right = size;
@@ -59,7 +97,10 @@ where
         left
     }
 
-    pub fn get(&self, k: &K) -> Option<(usize, &Node<K, V>)> {
+    pub fn get(&self, k: &K) -> Option<(usize, &Node<K, V>)>
+    where
+        K: Ord,
+    {
         let mut node = self;
         loop {
             let idx = node.find_index(k);
@@ -73,7 +114,10 @@ where
         }
     }
 
-    pub fn get_mut(&mut self, k: &K) -> Option<(usize, &mut Node<K, V>)> {
+    pub fn get_mut(&mut self, k: &K) -> Option<(usize, &mut Node<K, V>)>
+    where
+        K: Ord,
+    {
         let mut node = self;
         loop {
             let idx = node.find_index(k);
@@ -113,7 +157,10 @@ where
         self.children.insert(idx + 1, right);
     }
 
-    pub fn insert_nonfull(&mut self, k: K, mut v: V, degree: usize) -> Option<V> {
+    pub fn insert_nonfull(&mut self, k: K, mut v: V, degree: usize) -> Option<V>
+    where
+        K: Ord,
+    {
         assert!(!self.is_full(degree));
 
         let mut node = self;
@@ -146,7 +193,11 @@ where
         }
     }
 
-    fn min_keyval(&self) -> (K, V) {
+    fn min_keyval(&self) -> (K, V)
+    where
+        K: Clone,
+        V: Clone,
+    {
         let mut node = self;
 
         while !node.is_leaf() && !node.children[0].is_empty() {
@@ -156,7 +207,11 @@ where
         (node.keys[0].clone(), node.vals[0].clone())
     }
 
-    fn max_keyval(&self) -> (K, V) {
+    fn max_keyval(&self) -> (K, V)
+    where
+        K: Clone,
+        V: Clone,
+    {
         let mut node = self;
 
         while !node.is_leaf() && !node.children[node.children.len() - 1].is_empty() {
@@ -169,7 +224,11 @@ where
         )
     }
 
-    pub fn remove(&mut self, k: &K, degree: usize) -> Option<(K, V)> {
+    pub fn remove(&mut self, k: &K, degree: usize) -> Option<(K, V)>
+    where
+        K: Ord + Clone,
+        V: Clone,
+    {
         let mut idx = self.find_index(k);
 
         // Case 1: Key found in node and node is a leaf.
@@ -348,8 +407,8 @@ where
 
 impl<K, V> Debug for Node<K, V>
 where
-    K: Ord + Clone + Debug,
-    V: Clone + Debug,
+    K: Debug,
+    V: Debug,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         fn fmt_tree<K: Debug, V>(
@@ -360,8 +419,8 @@ where
             root: bool,
         ) -> fmt::Result
         where
-            K: Ord + Clone + Debug,
-            V: Clone + Debug,
+            K: Debug,
+            V: Debug,
         {
             if !root {
                 write!(

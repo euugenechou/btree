@@ -1,4 +1,5 @@
-mod node;
+pub mod error;
+pub(crate) mod node;
 
 use node::Node;
 use std::fmt::{self, Debug, Formatter};
