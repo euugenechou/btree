@@ -4,13 +4,14 @@ use serde::{Deserialize, Serialize};
 use std::ops::{Deref, DerefMut};
 use storage::Storage;
 
-pub struct NodeHandle<K, V> {
+pub struct NodeHandle<'a, K, V, S> {
     pub(crate) id: u64,
     pub(crate) node: Node<K, V>,
+    _storage: &'a S,
 }
 
-impl<K, V> NodeHandle<K, V> {
-    pub fn open<S>(id: u64, storage: &mut S) -> Result<Self, Error>
+impl<'a, K, V, S> NodeHandle<'a, K, V, S> {
+    pub fn open(id: u64, storage: &'a mut S) -> Result<Self, Error>
     where
         for<'de> K: Deserialize<'de>,
         for<'de> V: Deserialize<'de>,
@@ -27,6 +28,7 @@ impl<K, V> NodeHandle<K, V> {
         Ok(Self {
             id,
             node: bincode::deserialize(&ser)?,
+            _storage: storage,
         })
     }
 }

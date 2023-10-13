@@ -154,41 +154,25 @@ impl<K, V> Node<K, V> {
         }
     }
 
-    fn min_keyval(&self) -> (K, V)
-    where
-        K: Clone,
-        V: Clone,
-    {
+    fn min_key(&self) -> &K {
         let mut node = self;
-
-        while !node.is_leaf() && !node.children[0].is_empty() {
-            node = &node.children[0];
+        while !node.is_leaf() && !node.children.first().unwrap().is_empty() {
+            node = node.children.first().unwrap();
         }
-
-        (node.keys[0].clone(), node.vals[0].clone())
+        node.keys.first().unwrap()
     }
 
-    fn max_keyval(&self) -> (K, V)
-    where
-        K: Clone,
-        V: Clone,
-    {
+    fn max_key(&self) -> &K {
         let mut node = self;
-
-        while !node.is_leaf() && !node.children[node.children.len() - 1].is_empty() {
-            node = &node.children[node.children.len() - 1];
+        while !node.is_leaf() && !node.children.last().unwrap().is_empty() {
+            node = node.children.last().unwrap()
         }
-
-        (
-            node.keys[node.keys.len() - 1].clone(),
-            node.vals[node.vals.len() - 1].clone(),
-        )
+        node.keys.last().unwrap()
     }
 
     pub fn remove(&mut self, k: &K, degree: usize) -> Option<(K, V)>
     where
-        K: Ord + Clone,
-        V: Clone,
+        K: Ord,
     {
         let mut idx = self.find_index(k);
 
@@ -206,10 +190,14 @@ impl<K, V> Node<K, V> {
                 let pred = &mut self.children[idx];
 
                 // Replace key with the predecessor key and recursively delete it.
-                let (mut pred_key, mut pred_val) = pred.max_keyval();
+                // Safety: we won't ever use the reference past this point.
+                let pred_key = pred.max_key() as *const _;
+                let (mut pred_key, mut pred_val) =
+                    pred.remove(unsafe { &*pred_key }, degree).unwrap();
+
+                // The actual replacement.
                 mem::swap(&mut self.keys[idx], &mut pred_key);
                 mem::swap(&mut self.vals[idx], &mut pred_val);
-                pred.remove(&self.keys[idx], degree);
 
                 return Some((pred_key, pred_val));
             } else if self.children[idx + 1].len() >= degree {
@@ -217,10 +205,14 @@ impl<K, V> Node<K, V> {
                 let succ = &mut self.children[idx + 1];
 
                 // Replace key with the successor key and recursively delete it.
-                let (mut succ_key, mut succ_val) = succ.min_keyval();
+                // Safety: we don't ever use the reference past this point.
+                let succ_key = succ.min_key() as *const _;
+                let (mut succ_key, mut succ_val) =
+                    succ.remove(unsafe { &*succ_key }, degree).unwrap();
+
+                // The actual replacement.
                 mem::swap(&mut self.keys[idx], &mut succ_key);
                 mem::swap(&mut self.vals[idx], &mut succ_val);
-                succ.remove(&self.keys[idx], degree);
 
                 return Some((succ_key, succ_val));
             } else {

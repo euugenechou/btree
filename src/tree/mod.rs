@@ -15,8 +15,7 @@ pub struct BTree<K, V> {
 
 impl<K, V> BTree<K, V>
 where
-    K: Ord + Clone,
-    V: Clone,
+    K: Ord,
 {
     pub fn new() -> Self {
         Self::with_degree(DEFAULT_DEGREE)
@@ -97,8 +96,8 @@ where
 
 impl<K: Debug, V> Debug for BTree<K, V>
 where
-    K: Ord + Clone + Debug,
-    V: Clone + Debug,
+    K: Debug,
+    V: Debug,
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", self.root)

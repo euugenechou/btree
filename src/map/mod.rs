@@ -3,7 +3,10 @@ mod node;
 mod tests;
 
 use node::Node;
-use std::fmt::{self, Debug, Formatter};
+use std::{
+    fmt::{self, Debug, Formatter},
+    mem,
+};
 
 const DEFAULT_DEGREE: usize = 2;
 
@@ -70,7 +73,7 @@ impl<K, V> BTreeMap<K, V> {
     {
         if self.root.is_full(self.degree) {
             let mut new_root = Node::new();
-            std::mem::swap(&mut self.root, &mut new_root);
+            mem::swap(&mut self.root, &mut new_root);
             self.root.children.push(new_root);
             self.root.split_child(0, self.degree);
         }
@@ -86,16 +89,14 @@ impl<K, V> BTreeMap<K, V> {
 
     pub fn remove(&mut self, k: &K) -> Option<V>
     where
-        K: Ord + Clone,
-        V: Clone,
+        K: Ord,
     {
         self.remove_entry(k).map(|(_, val)| val)
     }
 
     pub fn remove_entry(&mut self, k: &K) -> Option<(K, V)>
     where
-        K: Ord + Clone,
-        V: Clone,
+        K: Ord,
     {
         if let Some(entry) = self.root.remove(k, self.degree) {
             if !self.root.is_leaf() && self.root.is_empty() {
