@@ -1,4 +1,7 @@
-use crate::tree::error::Error;
+use super::{
+    error::Error,
+    handle::{NodeHandle, NodeMutHandle},
+};
 use embedded_io::blocking::{Read, Write};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -6,10 +9,9 @@ use std::{
     fmt::{self, Debug, Formatter},
     mem,
 };
-use storage::Storage;
 
 #[derive(Serialize, Deserialize)]
-pub(crate) struct Node<K, V> {
+pub struct Node<K, V> {
     pub(crate) keys: Vec<K>,
     pub(crate) vals: Vec<V>,
     pub(crate) children: Vec<Node<K, V>>,
@@ -38,40 +40,6 @@ impl<K, V> Node<K, V> {
 
     pub fn is_leaf(&self) -> bool {
         self.children.is_empty()
-    }
-
-    fn read_from_storage<S>(storage: &mut S, id: u64) -> Result<Self, Error>
-    where
-        for<'de> K: Deserialize<'de>,
-        for<'de> V: Deserialize<'de>,
-        S: Storage<Id = u64>,
-    {
-        let mut ser = vec![];
-
-        storage
-            .read_handle(&id)
-            .map_err(|_| Error::Storage)?
-            .read_to_end(&mut ser)
-            .map_err(|_| Error::Storage)?;
-
-        Ok(bincode::deserialize(&ser)?)
-    }
-
-    fn write_to_storage<S>(&self, storage: &mut S, id: u64) -> Result<(), Error>
-    where
-        K: Serialize,
-        V: Serialize,
-        S: Storage<Id = u64>,
-    {
-        let ser = bincode::serialize(self)?;
-
-        storage
-            .write_handle(&id)
-            .map_err(|_| Error::Storage)?
-            .write_all(&ser)
-            .map_err(|_| Error::Storage)?;
-
-        Ok(())
     }
 
     fn find_index(&self, k: &K) -> usize

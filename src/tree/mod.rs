@@ -1,5 +1,6 @@
 pub mod error;
-pub(crate) mod node;
+pub mod handle;
+pub mod node;
 
 use node::Node;
 use std::fmt::{self, Debug, Formatter};
