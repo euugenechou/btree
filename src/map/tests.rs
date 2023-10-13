@@ -1,4 +1,4 @@
-use crate::{map::BTreeMap, node::Node};
+use super::{BTreeMap, Node};
 
 #[test]
 fn shuffled() {

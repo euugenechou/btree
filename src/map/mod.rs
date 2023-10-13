@@ -1,7 +1,8 @@
+mod node;
 #[cfg(test)]
 mod tests;
 
-use crate::node::Node;
+use node::Node;
 use std::fmt::{self, Debug, Formatter};
 
 const DEFAULT_DEGREE: usize = 2;
