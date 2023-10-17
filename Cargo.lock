@@ -6,6 +6,17 @@ version = 3
 name = "allocator"
 version = "0.1.0"
 source = "git+https://github.com/lemosyne/allocator#b1c5893b1318882e4288d306d726cf10aca84f33"
+dependencies = [
+ "num-traits",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
+name = "anyhow"
+version = "1.0.75"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a4668cab20f66d8d020e1fbc0ebe47217433c1b6c8f2040faf858554e394ace6"
 
 [[package]]
 name = "autocfg"
@@ -26,6 +37,7 @@ dependencies = [
 name = "btree"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "bincode",
  "embedded-io",
  "serde",
@@ -113,6 +125,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f665ee40bc4a3c5590afb1e9677db74a508659dfd71e126420da8274909a0167"
 
 [[package]]
+name = "num-traits"
+version = "0.2.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "39e3200413f237f41ab11ad6d161bc7239c84dcb631773ccd7de3dfe4b5c267c"
+dependencies = [
+ "autocfg",
+]
+
+[[package]]
 name = "pin-project-lite"
 version = "0.2.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -177,6 +198,7 @@ version = "0.1.0"
 dependencies = [
  "allocator",
  "embedded-io",
+ "thiserror",
 ]
 
 [[package]]
