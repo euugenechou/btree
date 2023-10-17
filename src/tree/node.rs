@@ -145,6 +145,7 @@ impl<K, V> Node<K, V> {
         .map_err(|_| Error::Serialization)?;
 
         // Acquire a write handle.
+        storage.truncate_id(&self.id, 0)?;
         let mut writer = storage.write_handle(&self.id)?;
 
         // Write each of the fields as a length-prefixed array of bytes.
