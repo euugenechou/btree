@@ -220,7 +220,7 @@ mod tests {
 
     #[test]
     fn simple() -> Result<()> {
-        let mut tree = BTree::new("/tmp/bkeytreedir-simple")?;
+        let mut tree = BTree::new("/tmp/btreedir-simple")?;
 
         for i in 0..1000 {
             assert_eq!(tree.insert(i, i + 1)?, None);
@@ -232,27 +232,27 @@ mod tests {
             assert_eq!(tree.len(), 999 - i);
         }
 
-        let _ = fs::remove_dir_all("/tmp/bkeytreedir-simple");
+        let _ = fs::remove_dir_all("/tmp/btreedir-simple");
 
         Ok(())
     }
 
     #[test]
     fn reloading() -> Result<()> {
-        let mut tree = BTree::new("/tmp/bkeytreedir-reload")?;
+        let mut tree = BTree::new("/tmp/btreedir-reload")?;
 
         for i in 0..1000 {
             assert_eq!(tree.insert(i, i + 1)?, None);
         }
         assert_eq!(tree.len(), 1000);
 
-        let mut tree = BTree::load(tree.persist()?, "/tmp/bkeytreedir-reload")?;
+        let mut tree = BTree::load(tree.persist()?, "/tmp/btreedir-reload")?;
 
         for i in 0..1000 {
             assert_eq!(tree.get_key_value(&i)?, Some((&i, &(i + 1))));
         }
 
-        let _ = fs::remove_dir_all("/tmp/bkeytreedir-reload");
+        let _ = fs::remove_dir_all("/tmp/btreedir-reload");
 
         Ok(())
     }
